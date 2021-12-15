@@ -8,9 +8,10 @@
 # 5. 처음에 2가 2개 
 # 선언부
 import copy, random
+
 zeroLocation = []
-board = [0]
-num = [2, 2, 2, 2, 2, 2, 2, 2, 2, 4]
+board = []                                  # 만들 때 항상 형태 주의. 이차원 리스트인지 일차원 리스트인지 편한 걸로 생각할 수도 있음.
+num = [2, 2, 2, 2, 2, 2, 2, 2, 2, 4]        # 그냥 if randint(0, 9) == 0 :일때만 4넣을 수도 있음
 score = 0
 key = {'w' : 0, 'a' : 1, 's' : 2, 'd' : 3}
 move = [[0, -1], [-1, 0], [0, 1], [1, 0]]   # **y좌표는 내려갈수록 증가함
@@ -18,16 +19,20 @@ print('board status :', board )
 
 print('Welcome to 2048 game')
 size = int(input('board size input (more than 3) :'))
-board *= size**2
+board = [[0 for j in range(size)] for i in range(size)]
+print('board init :')
+print(board)
+for i in range(size):
+    for j in range(size):
+        print(board[i][j], end = ' ')
+    print()
 
 def isEnd():
     global board
-    if board.cound(0) > 0:          # 빈칸 있으면 안끝난것, 더 빠른 버전.
-        return 0
     for y in range(size):
         for x in range(size):
-            #if board[y][x] == 0:    # 빈칸 있으면 안끝난것
-            #    return 0
+            if board[y][x] == 0:    # 빈칸 있으면 안끝난것
+                return 0
             cnt = 0
             for i in range(4):  # **상하좌우 4번만 검사
                 if (i % 2 == 0 and 0 < y + i - 1 < size) or (i % 2 == 1 and 0 < x + i - 2 < size) :
@@ -66,8 +71,36 @@ def merge(y1, x1, y2, x2):   # 두 좌표를 입력받고 그 좌표에 있는 �
     global board
     global score
     board[y1][x1] *= 2
+    score += board[y1][x1]
     board[y2][x2] = 0
     return
+
+def rotate():       # 오른쪽(시계 방향)으로 1회 회전
+    global board
+    white_board = [[0 for j in range(size)] for i in range(size)]
+    for i in range(size):
+        for j in range(size):
+            white_board[j][size-i-1] = board[i][j]
+    board = copy.deepcopy(white_board)
+    return
+
+def printBoard():
+    global board
+    for i in range(4):
+        for j in range(4):
+            print('%4d' % board[i][j], end = ' ')
+        print()
+    return
+
+def maxNum():
+    global board
+    num = 0
+    for i in range(size):
+        for j in range(size):
+            if board[i][j] > num:
+                num = copy.copy(board[i][j])
+    return num
+
 
 # 입력부
 q1 = input('Start game? y/n')
@@ -84,41 +117,56 @@ else:
 
 for i in range(2):
     coordinate = [random.randint(0, size-1), random.randint(0, size-1)]
-    while board[coordinate[1], coordinate[0]] != 0:             # 빈칸에 생성
-        coordinate = [random.randint(0, size-1), random.randint(0, size-1)]
-    board[coordinate[0], coordinate[1]] = 2
     
+    while board[coordinate[1]][coordinate[0]] != 0:             # 빈칸에 생성
+        coordinate = [random.randint(0, size-1), random.randint(0, size-1)]
+    board[coordinate[0]][coordinate[1]] = 2
+
 # 계속 반복
 while round > 0:
-    for i in range(4):
-        for j in range(4):
-            print('%4d' % board[i][j], end = ' ')
-        print()
-    
+    # 출력
+    print()
+    maxNumber = maxNum()
+    print('round : %4d / score : %d / max Number : %d' % (round, score, maxNumber))
+    printBoard()
+    # 입력받음
     direction = input('press w/a/s/d :')
     if direction not in key:
         print('wrong key input')
         continue
     else:       # 움직일 때
-        ymove = move[key[direction][1]]
-        xmove = move[key[direction][0]]
-        if ymove != 0:
-            for i in range(size):
-                for j in range(size):
-                    if i == 0:
-                        continue
-                    else:
-                        if board[i + ymove][j + xmove] == 0:
-                            swap(i + ymove, j + xmove, i, j)
-                        if board[i + ymove][j + xmove] == board[i][j]:
-                            merge(i + ymove, j + xmove, i, j)
+        # 첫 번째 돌림
+        for i in range(key[direction]):
+            rotate()
+        
+        # 숫자 움직이기
+        for i in range(size):
+            for j in range(size):
+                if board[i][j] != 0:
+                    for k in range(i):      # y좌표 내려온 횟수만큼 반복
+                        if board[i - k - 1][j] == 0:                    # 위에 비어있으면 올려보냄
+                            swap(i - k - 1, j, i - k, j)
+                        elif board[i - k - 1][j] == board[i - k][j]:        # 같을 때 합침
+                            merge(i - k - 1, j, i - k, j)                   # 올려보내기를 먼저 해서 바로 위에 숫자가 있을 경우에만 합침. 중간에 0이 있을 경우 없음.
 
+        # 두 번째 돌림
+        for i in range(4 - key[direction]):
+            rotate()
 
     # 끝났는지 판단
     if isEnd() :
-
         break
     else:
         round += 1
         # 랜덤한 위치에 랜덤한 숫자 생성(4와 2비율은 1:9정도)
         createRandomNumber()
+        print(zeroLocation)
+
+#일단은 2048찍고 게임 끝날 경우에도 승리로 판정
+maxNumber = maxNum()
+if maxNumber >= 2048:
+    print('You Win!')
+    print('Congratuations! your max Number is %d and Score is %d' % (maxNumber, score))
+else:
+    print('You Lose')
+    print('Wawawa... See you next time! Your max Number is %d and score is %d' % (maxNumber, score))
