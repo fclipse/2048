@@ -15,17 +15,17 @@ num = [2, 2, 2, 2, 2, 2, 2, 2, 2, 4]        # 그냥 if randint(0, 9) == 0 :일�
 score = 0
 key = {'w' : 0, 'a' : 1, 's' : 2, 'd' : 3}
 move = [[0, -1], [-1, 0], [0, 1], [1, 0]]   # **y좌표는 내려갈수록 증가함
-print('board status :', board )
+#print('board status :', board )
 
 print('Welcome to 2048 game')
 size = int(input('board size input (more than 3) :'))
 board = [[0 for j in range(size)] for i in range(size)]
-print('board init :')
-print(board)
-for i in range(size):
-    for j in range(size):
-        print(board[i][j], end = ' ')
-    print()
+#print('board init :')
+#print(board)
+#for i in range(size):
+#    for j in range(size):
+#        print(board[i][j], end = ' ')
+#    print()
 
 def isEnd():
     global board
@@ -47,7 +47,7 @@ def findZero():
     for i in range(size):
         for j in range(size):
             if board[i][j] == 0:
-                zeroLocation.append([i, j])
+                zeroLocation.append([i, j])     # ***여기서 [y, x] 형태로 생성하는데 그걸 제대로 받지 못해 생긴 문제.
     return
 
 def createRandomNumber():
@@ -57,7 +57,8 @@ def createRandomNumber():
     findZero()
     N = num[random.randint(0, 9)]
     randindex = random.randint(0, len(zeroLocation) - 1)
-    board[zeroLocation[randindex][1]][zeroLocation[randindex][0]] = N   # 첫번째인덱스가 y, 두번째 인덱스가 x
+    #print('radom coordinate :', randindex[0], randindex[1])
+    board[zeroLocation[randindex][0]][zeroLocation[randindex][1]] = N   # 첫번째인덱스가 y, 두번째 인덱스가 x
     return
 
 def swap(y1, x1, y2, x2):   # 두 좌표를 입력받고 그 좌표에 있는 수를 바꿈
@@ -103,15 +104,15 @@ def maxNum():
 
 
 # 입력부
-q1 = input('Start game? y/n')
+#q1 = input('Start game? y/n')
 round = 0
 
-if q1 == 'n':
-    print('See you next time')
-    round = -1    
-else:
-    print('Game start')
-    round = 1
+#if q1 == 'n':
+#    print('See you next time')
+#    round = -1    
+#else:
+print('Game start')
+round = 1
 # 실행부
 # 초기 랜덤 숫자 2개
 
@@ -140,19 +141,30 @@ while round > 0:
             rotate()
         
         # 숫자 움직이기
+        moved = 0       # 움직이지 않으면 안됨.
         for i in range(size):
             for j in range(size):
+                merged = 0                  # 턴마다 한 번씩만 merge해줘야 함.
                 if board[i][j] != 0:
                     for k in range(i):      # y좌표 내려온 횟수만큼 반복
                         if board[i - k - 1][j] == 0:                    # 위에 비어있으면 올려보냄
                             swap(i - k - 1, j, i - k, j)
-                        elif board[i - k - 1][j] == board[i - k][j]:        # 같을 때 합침
+                            moved += 1
+                        elif board[i - k - 1][j] == board[i - k][j] and merged == 0:        # 같을 때 합침
                             merge(i - k - 1, j, i - k, j)                   # 올려보내기를 먼저 해서 바로 위에 숫자가 있을 경우에만 합침. 중간에 0이 있을 경우 없음.
-
+                            merged += 1
+                            moved += 1
+        
         # 두 번째 돌림
         for i in range(4 - key[direction]):
             rotate()
-
+            
+        if moved == 0:
+                continue        # 바뀐 게 없으면 다시 한번.
+    
+    # 오류 확인용
+    #print('before create random number')
+    #printBoard()
     # 끝났는지 판단
     if isEnd() :
         break
